@@ -11,7 +11,7 @@ import java.util.Random;
 
 public class Desu extends AModule {
 
-    List<Message> messageList = new ArrayList<>();
+    private List<Message> messageList = new ArrayList<>();
 
     public Desu() {
         messageList.add(new MessageBuilder("desu.").build());

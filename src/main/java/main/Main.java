@@ -4,18 +4,21 @@ import active.Crosspost;
 import active.Cube;
 import active.Ping;
 import active.Roll;
-import net.dv8tion.jda.core.*;
-import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import net.dv8tion.jda.client.entities.Group;
+import net.dv8tion.jda.core.AccountType;
+import net.dv8tion.jda.core.JDA;
+import net.dv8tion.jda.core.JDABuilder;
+import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.exceptions.PermissionException;
-import net.dv8tion.jda.core.exceptions.RateLimitedException;
+import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import passive.CustomEmotes;
 import passive.Desu;
 
 import javax.security.auth.login.LoginException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main extends ListenerAdapter {
 
@@ -71,6 +74,8 @@ public class Main extends ListenerAdapter {
      */
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
+
+        // We don't want to reply to bots, sorry :P
         if (!event.getAuthor().isBot()) {
             for (AModule m : modules) {
                 if (m.accept(event)) break;
@@ -123,7 +128,8 @@ public class Main extends ListenerAdapter {
 
             System.out.printf("[GRP: %s]<%s>: %s\n", groupName, author.getName(), msg);
         }
-        else if (msg.startsWith("!kick"))   //Note, I used "startsWith, not equals.
+
+        if (msg.startsWith("!kick"))   //Note, I used "startsWith, not equals.
         {
             //This is an admin command. That means that it requires specific permissions to use it, in this case
             // it needs Permission.KICK_MEMBERS. We will have a check before we attempt to kick members to see
@@ -190,34 +196,6 @@ public class Main extends ListenerAdapter {
                 }
             } else {
                 channel.sendMessage("This is a Guild-Only command!").queue();
-            }
-        } else if (msg.equals("!block")) {
-            //This is an example of how to use the complete() method on RestAction. The complete method acts similarly to how
-            // JDABuilder's buildBlocking works, it waits until the request has been sent before continuing execution.
-            //Most developers probably wont need this and can just use queue. If you use complete, JDA will still handle ratelimit
-            // control, however if shouldQueue is false it won't queue the Request to be sent after the ratelimit retry after time is past. It
-            // will instead fire a RateLimitException!
-            //One of the major advantages of complete() is that it returns the object that queue's success consumer would have,
-            // but it does it in the same execution context as when the request was made. This may be important for most developers,
-            // but, honestly, queue is most likely what developers will want to use as it is faster.
-
-            try {
-                //Note the fact that complete returns the Message object!
-                //The complete() overload queues the Message for execution and will return when the message was sent
-                //It does handle rate limits automatically
-                Message sentMessage = channel.sendMessage("I blocked and will return the message!").complete();
-                //This should only be used if you are expecting to handle rate limits yourself
-                //The completion will not succeed if a rate limit is breached and throw a RateLimitException
-                Message sentRatelimitMessage = channel.sendMessage("I expect rate limitation and know how to handle it!").complete(false);
-
-                System.out.println("Sent a message using blocking! Luckly I didn't get Ratelimited... MessageId: " + sentMessage.getId());
-            } catch (RateLimitedException e) {
-                System.out.println("Whoops! Got ratelimited when attempting to use a .complete() on a RestAction! RetryAfter: " + e.getRetryAfter());
-            }
-            //Note that RateLimitException is the only checked-exception thrown by .complete()
-            catch (RuntimeException e) {
-                System.out.println("Unfortunately something went wrong when we tried to send the Message and .complete() threw an Exception.");
-                e.printStackTrace();
             }
         }
     }

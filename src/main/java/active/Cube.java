@@ -74,7 +74,7 @@ public class Cube extends AModule {
         return output.toString();
     }
 
-    private String rtrim(String s) {
+    private String rtrim(@Nonnull String s) {
         int i = s.length()-1;
         while (i > 0 && Character.isWhitespace(s.charAt(i))) {
             i--;

@@ -8,8 +8,8 @@ import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 public abstract class AModule implements IModule {
-    public JDA jda;
-    public User author;
+    protected JDA jda;
+    protected User author;
     protected Message message;
     protected MessageChannel channel;     // This could be a TextChannel, PrivateChannel, or Group!
     protected String content;
