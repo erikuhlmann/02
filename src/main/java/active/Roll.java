@@ -1,6 +1,7 @@
 package active;
 
 import main.AModule;
+import main.Utils;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
@@ -33,12 +34,12 @@ public class Roll extends AModule {
                 System.out.println(dice);
                 String[] diceParams = dice.split("d");
 
-                if (isInteger(dice)) {
+                if (Utils.isInteger(dice)) {
                     sum += Integer.parseInt(dice);
                     break;
                 } else if (diceParams.length != 2
-                        || !isInteger(diceParams[0])
-                        || !isInteger(diceParams[1])) {
+                        || !Utils.isInteger(diceParams[0])
+                        || !Utils.isInteger(diceParams[1])) {
                     return fail("malformed dice argument " + dice);
                 }
 
@@ -72,22 +73,6 @@ public class Roll extends AModule {
 
     private boolean fail(String failmsg) {
         channel.sendMessage(new MessageBuilder(failmsg).build()).queue();
-        return true;
-    }
-
-    private static boolean isInteger(String s) {
-        return isInteger(s, 10);
-    }
-
-    private static boolean isInteger(String s, int radix) {
-        if (s.isEmpty()) return false;
-        for (int i = 0; i < s.length(); i++) {
-            if (i == 0 && s.charAt(i) == '-') {
-                if (s.length() == 1) return false;
-                else continue;
-            }
-            if (Character.digit(s.charAt(i), radix) < 0) return false;
-        }
         return true;
     }
 }

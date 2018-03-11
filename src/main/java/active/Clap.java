@@ -2,6 +2,7 @@ package active;
 
 import com.vdurmont.emoji.EmojiManager;
 import main.AModule;
+import main.Utils;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Emote;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
@@ -40,7 +41,7 @@ public class Clap extends AModule {
                     output.append(args[i]);
                     output.append(args[1]);
                 }
-            } else if (isInteger(temp) && guild.getEmoteById(temp) != null) {
+            } else if (Utils.isInteger(temp) && guild.getEmoteById(temp) != null) {
                 for (int i = 2; i < args.length - 1; i++) {
                     output.append(args[i]);
                     output.append(args[1]);
@@ -65,21 +66,5 @@ public class Clap extends AModule {
         }
 
         return content.startsWith("!clap");
-    }
-
-    private static boolean isInteger(String s) {
-        return isInteger(s, 10);
-    }
-
-    private static boolean isInteger(String s, int radix) {
-        if (s.isEmpty()) return false;
-        for (int i = 0; i < s.length(); i++) {
-            if (i == 0 && s.charAt(i) == '-') {
-                if (s.length() == 1) return false;
-                else continue;
-            }
-            if (Character.digit(s.charAt(i), radix) < 0) return false;
-        }
-        return true;
     }
 }
