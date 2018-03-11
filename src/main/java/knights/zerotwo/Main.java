@@ -20,6 +20,7 @@ import knights.zerotwo.modules.Crosspost;
 import knights.zerotwo.modules.Cube;
 import knights.zerotwo.modules.CustomEmotes;
 import knights.zerotwo.modules.Desu;
+import knights.zerotwo.modules.EmoteConfig;
 import knights.zerotwo.modules.Ping;
 import knights.zerotwo.modules.Roll;
 import net.dv8tion.jda.core.AccountType;
@@ -47,7 +48,7 @@ public class Main extends ListenerAdapter {
     private Main() {
         passiveModules = Arrays.asList(new Desu());
         activeModules = Arrays.asList(new Ping(), new Crosspost(), new Clap(), new Roll(),
-                new Cube());
+                new Cube(), new EmoteConfig());
         wrapperModules = Arrays.asList(new CustomEmotes());
     }
 

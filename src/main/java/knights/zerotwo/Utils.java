@@ -1,8 +1,13 @@
 package knights.zerotwo;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 public class Utils {
+    public static final Set<String> NON_EMOTE_USERS = new HashSet<>();
+    
 	public static final String PREFIX = "!";
 
 	public static boolean isCommand(MessageReceivedEvent event, String command) {

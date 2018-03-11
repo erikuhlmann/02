@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import knights.zerotwo.IActive;
 import knights.zerotwo.IWrap;
+import knights.zerotwo.Utils;
 import net.dv8tion.jda.core.entities.Emote;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Icon;
@@ -40,7 +41,7 @@ public class CustomEmotes implements IWrap {
             logger.debug("Done sending message");
         }
     }
-    
+
     private static final Logger logger = LoggerFactory.getLogger(CustomEmotes.class);
 
     private static final Pattern EMOTES = Pattern.compile(":([A-Za-z0-9_\\s]+):");
@@ -48,6 +49,9 @@ public class CustomEmotes implements IWrap {
 
     @Override
     public boolean test(MessageReceivedEvent event) {
+        if (Utils.NON_EMOTE_USERS.contains(event.getAuthor().getId())) {
+            return false;
+        }
         String raw = event.getMessage().getContentRaw();
         Matcher m = EMOTES.matcher(raw);
         while (m.find()) {
