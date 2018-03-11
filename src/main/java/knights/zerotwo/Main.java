@@ -27,6 +27,7 @@ import knights.zerotwo.modules.Roll;
 import knights.zerotwo.modules.Vouch;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDABuilder;
+import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.events.ReadyEvent;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
@@ -71,6 +72,12 @@ public class Main extends ListenerAdapter {
             return;
         }
 
+        if (event.getMessage().getContentRaw().trim().equals("!roleid")) {
+            event.getChannel().sendMessage("```\n" + event.getGuild().getRoles().stream()
+                    .map(Role::toString).collect(Collectors.joining("\n")) + "\n```").queue();
+            return;
+        }
+
         List<IPassive> passive = passiveModules.stream().filter(m -> m.test(event))
                 .collect(Collectors.toList());
         Optional<IActive> active = activeModules.stream().filter(m -> m.test(event)).findAny();
@@ -100,8 +107,10 @@ public class Main extends ListenerAdapter {
     @Override
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
         Utils.NEW_USERS.put(event.getUser().getId(), new HashSet<>());
-        event.getGuild().getTextChannelById(Utils.VOUCH_CHANNEL).sendMessage(
-                event.getUser().getAsMention() + " joined the server! Type `" + Utils.PREFIX
-                        + "vouch @" + event.getUser().getName() + "` to vouch for them").queue();
+        event.getGuild().getTextChannelById(Utils.VOUCH_CHANNEL)
+                .sendMessage(
+                        event.getUser().getAsMention() + " joined the server! Type `" + Utils.PREFIX
+                                + "vouch @" + event.getUser().getName() + "` to vouch for them")
+                .queue();
     }
 }
