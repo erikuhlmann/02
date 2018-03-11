@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import knights.zerotwo.IActive;
 import knights.zerotwo.IWrap;
 import net.dv8tion.jda.core.entities.Emote;
@@ -26,6 +29,7 @@ public class CustomEmotes implements IWrap {
         public void apply(MessageReceivedEvent event, String messageContent) {
             Guild guild = event.getGuild();
 
+            logger.debug("Sending message");
             guild.getController()
                     .setNickname(guild.getSelfMember(), event.getMessage().getAuthor().getName())
                     .complete();
@@ -33,8 +37,11 @@ public class CustomEmotes implements IWrap {
             event.getChannel().sendMessage(messageContent).complete();
 
             guild.getController().setNickname(guild.getSelfMember(), "").complete();
+            logger.debug("Done sending message");
         }
     }
+    
+    private static final Logger logger = LoggerFactory.getLogger(CustomEmotes.class);
 
     private static final Pattern EMOTES = Pattern.compile(":([A-Za-z0-9_\\s]+):");
     private static final IActive DEFAULT_ACTIVE = new CustomEmoteDefaultAction();
@@ -57,6 +64,7 @@ public class CustomEmotes implements IWrap {
 
     @Override
     public WrapResult preAction(MessageReceivedEvent event) {
+        logger.debug("Starting emote replacement");
         String raw = event.getMessage().getContentRaw();
         Matcher m = EMOTES.matcher(raw);
 
@@ -82,6 +90,7 @@ public class CustomEmotes implements IWrap {
                     .getResourceAsStream("/custom-emotes/" + emote + ".png");
             if (img != null) {
                 try {
+                    logger.debug("Uploading {}", emote);
                     Emote result = event.getGuild().getController()
                             .createEmote(emote, Icon.from(img)).complete();
 
@@ -89,7 +98,7 @@ public class CustomEmotes implements IWrap {
 
                     emotesPendingDeletion.add(result);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error("Failed to upload", e);
                 }
             } else {
                 List<Emote> emotes1 = event.getGuild().getEmotesByName(emote, false);
@@ -100,6 +109,7 @@ public class CustomEmotes implements IWrap {
         }
         m.appendTail(sb);
 
+        logger.debug("Finished emote replacement");
         if (sb.length() < 2000) {
             return new WrapResult(sb.toString(), DEFAULT_ACTIVE);
         } else {
@@ -112,6 +122,7 @@ public class CustomEmotes implements IWrap {
 
     @Override
     public void postAction(MessageReceivedEvent event) {
+        logger.debug("Clean up emotes");
         emotesPendingDeletion.forEach(emote -> emote.delete().queue());
         emotesPendingDeletion.clear();
     }
