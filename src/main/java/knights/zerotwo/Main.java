@@ -1,6 +1,7 @@
 package knights.zerotwo;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -23,8 +24,11 @@ import knights.zerotwo.modules.Desu;
 import knights.zerotwo.modules.EmoteConfig;
 import knights.zerotwo.modules.Ping;
 import knights.zerotwo.modules.Roll;
+import knights.zerotwo.modules.Vouch;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDABuilder;
+import net.dv8tion.jda.core.events.ReadyEvent;
+import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 
@@ -48,12 +52,17 @@ public class Main extends ListenerAdapter {
     private Main() {
         passiveModules = Arrays.asList(new Desu());
         activeModules = Arrays.asList(new Ping(), new Crosspost(), new Clap(), new Roll(),
-                new Cube(), new EmoteConfig());
+                new Cube(), new EmoteConfig(), new Vouch());
         wrapperModules = Arrays.asList(new CustomEmotes());
     }
 
     private static final ThreadPoolExecutor exec = new ThreadPoolExecutor(1, 1, 0,
             TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(3, true));
+
+    @Override
+    public void onReady(ReadyEvent event) {
+        logger.info("Ready, id={}", event.getJDA().getSelfUser().getId());
+    }
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
@@ -86,5 +95,13 @@ public class Main extends ListenerAdapter {
             logger.warn("Overloaded queue", e);
             event.getChannel().sendMessage("Too many commands @.@").queue();
         }
+    }
+
+    @Override
+    public void onGuildMemberJoin(GuildMemberJoinEvent event) {
+        Utils.NEW_USERS.put(event.getUser().getId(), new HashSet<>());
+        event.getGuild().getTextChannelById(Utils.VOUCH_CHANNEL).sendMessage(
+                event.getUser().getAsMention() + " joined the server! Type `" + Utils.PREFIX
+                        + "vouch @" + event.getUser().getName() + "` to vouch for them").queue();
     }
 }
