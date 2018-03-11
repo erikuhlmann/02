@@ -1,12 +1,12 @@
-package active;
+package knights.zerotwo.modules;
 
 import com.vdurmont.emoji.EmojiManager;
-import main.AModule;
-import main.Utils;
+
+import knights.zerotwo.AModule;
+import knights.zerotwo.Utils;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Emote;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
-import passive.CustomEmotes;
 
 
 public class Clap extends AModule {

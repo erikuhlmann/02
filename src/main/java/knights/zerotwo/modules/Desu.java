@@ -1,6 +1,5 @@
-package passive;
+package knights.zerotwo.modules;
 
-import main.AModule;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
@@ -8,6 +7,8 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import knights.zerotwo.AModule;
 
 public class Desu extends AModule {
 

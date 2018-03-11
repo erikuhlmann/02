@@ -1,6 +1,6 @@
-package active;
+package knights.zerotwo.modules;
 
-import main.AModule;
+import knights.zerotwo.AModule;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 public class Ping extends AModule {

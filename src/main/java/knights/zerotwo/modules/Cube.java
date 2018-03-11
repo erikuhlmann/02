@@ -1,10 +1,11 @@
-package active;
+package knights.zerotwo.modules;
 
-import main.AModule;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 import javax.annotation.Nonnull;
+
+import knights.zerotwo.AModule;
 
 public class Cube extends AModule {
 

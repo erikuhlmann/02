@@ -1,12 +1,4 @@
-package passive;
-
-import main.AModule;
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.entities.Emote;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Icon;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+package knights.zerotwo.modules;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,6 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import knights.zerotwo.AModule;
+import net.dv8tion.jda.core.MessageBuilder;
+import net.dv8tion.jda.core.entities.Emote;
+import net.dv8tion.jda.core.entities.Icon;
+import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 public class CustomEmotes extends AModule {
 
