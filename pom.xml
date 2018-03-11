@@ -6,10 +6,24 @@
     <groupId>knights.discord</groupId>
     <artifactId>02</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+    
+    <modules>
+
+    <module>02-main</module>
+    <module>02-service</module>
+    <module>02-clap</module>
+    <module>02-crosspost</module>
+    <module>02-cube</module>
+    <module>02-emotes</module>
+    <module>02-desu</module>
+    <module>02-ping</module>
+    <module>02-roll</module>
+    </modules>
 
     <build>
         <plugins>
@@ -52,22 +66,4 @@
             <url>http://jcenter.bintray.com</url>
         </repository>
     </repositories>
-
-    <dependencies>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.3</version>
-        </dependency>
-        <dependency>
-            <groupId>net.dv8tion</groupId>
-            <artifactId>JDA</artifactId>
-            <version>3.5.1_339</version>
-        </dependency>
-        <dependency>
-            <groupId>com.vdurmont</groupId>
-            <artifactId>emoji-java</artifactId>
-            <version>4.0.0</version>
-        </dependency>
-    </dependencies>
 </project>
