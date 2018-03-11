@@ -5,6 +5,7 @@ import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Emote;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Icon;
+import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 import java.io.IOException;
@@ -16,13 +17,37 @@ import java.util.stream.Collectors;
 
 public class CustomEmotes extends AModule {
 
+    List<Emote> emotesPendingDeletion = new ArrayList<>();
+    List<Message> messsagesPendingDeletion = new ArrayList<>();
+    List<String> emotesAsString = new ArrayList<>();
+    List<Emote> emotes = new ArrayList<>();
+    MessageBuilder messageBuilder = new MessageBuilder();
+
     @Override
     public boolean accept(MessageReceivedEvent event) {
         super.accept(event);
 
-        String EMOJI_PATTERN = ":([A-Za-z0-9_\\s]*):";
+        if (!content.startsWith("!")) {
+            initEmotes(event);
 
-        List<String> emotesAsString = Pattern.compile(EMOJI_PATTERN)
+            if (emotes.size() != 0) {
+                if (messageBuilder.length() > 2000) {
+                    channel.sendMessage(new MessageBuilder("Only my darling can handle me like that. Don't even try.").build()).queue();
+                } else if (!content.startsWith("!")) {
+                    guild.getController().setNickname(guild.getSelfMember(), message.getAuthor().getName()).complete();
+                    channel.sendMessage(messageBuilder.build()).complete();
+                    messsagesPendingDeletion.add(message);
+                }
+            }
+        }
+
+        return false; // we should always return false, since we want this to be a passive command
+    }
+
+    public String initEmotes(MessageReceivedEvent event) {
+        super.accept(event);
+
+         emotesAsString = Pattern.compile(":([A-Za-z0-9_\\s]*):")
                 .matcher(content)
                 .results()
                 .map(str -> {
@@ -35,15 +60,14 @@ public class CustomEmotes extends AModule {
                 .distinct()
                 .collect(Collectors.toList());
 
-        List<Emote> emotes = new ArrayList<>();
+        emotes = new ArrayList<>();
+        messageBuilder = new MessageBuilder(content);
 
-        MessageBuilder messageBuilder = new MessageBuilder(content);
-
-        Guild guild = event.getGuild();
         emotesAsString.forEach(emote -> {
             InputStream img = this.getClass().getResourceAsStream("/custom-emotes/" + emote + ".png");
             if (img != null) {
                 try {
+                    System.out.println("setting emote " + emote);
                     Emote result = guild.getController().createEmote(emote, Icon.from(img)).complete();
                     messageBuilder.replace(":" + emote + ":", result.getAsMention());
                     emotes.add(result);
@@ -60,18 +84,20 @@ public class CustomEmotes extends AModule {
             }
         });
 
-        if (emotes.size() != 0) {
-            if (messageBuilder.length() > 2000) {
-                channel.sendMessage(new MessageBuilder("Only my darling can handle me like that. Don't even try.").build()).queue();
-            } else {
-                guild.getController().setNickname(guild.getSelfMember(), message.getAuthor().getName()).complete();
-                channel.sendMessage(messageBuilder.build()).complete();
-                message.delete().queue();
-                guild.getController().setNickname(guild.getSelfMember(), "").queue();
-            }
-            emotes.forEach(emote -> emote.delete().queue());
-        }
+        emotesPendingDeletion.addAll(emotes);
 
-        return false; // we should always return false, since we want this to be a passive command
+        return messageBuilder.build().getContentRaw();
+    }
+
+    @Override
+    public void cleanup() {
+        emotesPendingDeletion.forEach(emote -> emote.delete().complete());
+        emotesPendingDeletion.clear();
+        messsagesPendingDeletion.forEach(message -> message.delete().complete());
+        messsagesPendingDeletion.clear();
+        guild.getController().setNickname(guild.getSelfMember(), "").complete();
+        emotesAsString.clear();
+        emotes.clear();
+        messageBuilder = new MessageBuilder();
     }
 }

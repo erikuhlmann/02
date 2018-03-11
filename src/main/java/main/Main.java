@@ -1,9 +1,6 @@
 package main;
 
-import active.Crosspost;
-import active.Cube;
-import active.Ping;
-import active.Roll;
+import active.*;
 import net.dv8tion.jda.client.entities.Group;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDA;
@@ -22,7 +19,7 @@ import java.util.List;
 
 public class Main extends ListenerAdapter {
 
-    List<AModule> modules = new ArrayList<>();
+    private List<AModule> modules = new ArrayList<>();
 
     /**
      * This is the method where the program starts.
@@ -32,7 +29,7 @@ public class Main extends ListenerAdapter {
         // we would use AccountType.CLIENT
         try {
             JDA jda = new JDABuilder(AccountType.BOT)
-                    .setToken("NDIxNTc1MjA4NzgxMDg2NzIw.DYPOTA.JyuZZ5xO1ufYTD6YpkahiuJaGmM")           //The token of the account that is logging in.
+                    .setToken("")           //The token of the account that is logging in.
                     .addEventListener(new Main())  //An instance of a class that will handle events.
                     .buildBlocking();  //There are 2 ways to login, blocking vs async. Blocking guarantees that JDA will be completely loaded.
         } catch (LoginException e) {
@@ -57,6 +54,7 @@ public class Main extends ListenerAdapter {
 
         // Load active commands
         modules.add(new Crosspost());
+        modules.add(new Clap());
         modules.add(new Ping());
         modules.add(new Roll());
         modules.add(new Cube());
@@ -80,6 +78,8 @@ public class Main extends ListenerAdapter {
             for (AModule m : modules) {
                 if (m.accept(event)) break;
             }
+
+            modules.forEach(IModule::cleanup);
         }
 
         //These are provided with every event in JDA

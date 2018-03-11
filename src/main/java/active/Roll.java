@@ -72,7 +72,7 @@ public class Roll extends AModule {
 
     private boolean fail(String failmsg) {
         channel.sendMessage(new MessageBuilder(failmsg).build()).queue();
-        return false;
+        return true;
     }
 
     private static boolean isInteger(String s) {
