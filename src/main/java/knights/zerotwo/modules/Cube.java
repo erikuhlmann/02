@@ -1,54 +1,72 @@
 package knights.zerotwo.modules;
 
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
-import knights.zerotwo.AModule;
+import knights.zerotwo.IActive;
+import knights.zerotwo.Utils;
+import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
-public class Cube extends AModule {
+public class Cube implements IActive {
 
     @Override
-    public boolean accept(@Nonnull MessageReceivedEvent event) {
-        super.accept(event);
-
-        if (content.startsWith("!cube")) {
-            String toCube = content.substring(content.indexOf(" ") + 1);
-            System.out.println(toCube);
-            boolean shouldReverseText = toCube.charAt(0) != toCube.charAt(toCube.length() - 1);
-
-            int offset = (toCube.length()) / 2;
-            char[][] field = new char[toCube.length() + offset][(toCube.length() + offset) * 2 - 1];
-            for (int i = 0; i < field.length; i++) {
-                for (int j = 0; j < field[0].length; j++) {
-                    field[i][j] = ' ';
-                }
-            }
-
-            drawDiagonal(toCube.length(), field, offset);
-            drawBox(toCube, shouldReverseText, field, offset * 2, 0);
-            drawBox(toCube, shouldReverseText, field, 0, offset);
-
-            guild.getController().setNickname(guild.getSelfMember(), message.getAuthor().getName()).complete();
-            channel.sendMessage(new MessageBuilder().appendCodeBlock(flattenMessage(field, toCube.length()), "")
-                    .build()).queue();
-            message.delete().queue();
-            guild.getController().setNickname(guild.getSelfMember(), "").queue();
-
-        }
-
-        return content.startsWith("!cube");
-
+    public boolean test(MessageReceivedEvent event) {
+        return Utils.isCommand(event, "cube");
     }
 
-    private void drawBox(@Nonnull String str, boolean shouldRev, @Nonnull char[][] field, int x, int y) {
+    @Override
+    public CompletableFuture<Void> apply(MessageReceivedEvent event, String messageContent) {
+        int sublen = "cube".length() + Utils.PREFIX.length() + 1;
+        if (messageContent.length() < sublen) {
+            event.getChannel().sendMessage("What do you want to cube?").complete();
+            return CompletableFuture.completedFuture(null);
+        }
+
+        String toCube = messageContent.substring(sublen);
+
+        boolean shouldReverseText = toCube.charAt(0) != toCube.charAt(toCube.length() - 1);
+
+        int offset = (toCube.length()) / 2;
+        char[][] field = new char[toCube.length() + offset][(toCube.length() + offset) * 2 - 1];
+        for (int i = 0; i < field.length; i++) {
+            for (int j = 0; j < field[0].length; j++) {
+                field[i][j] = ' ';
+            }
+        }
+
+        drawDiagonal(toCube.length(), field, offset);
+        drawBox(toCube, shouldReverseText, field, offset * 2, 0);
+        drawBox(toCube, shouldReverseText, field, 0, offset);
+        return CompletableFuture.runAsync(() -> {
+            Guild guild = event.getGuild();
+
+            String msg = "```\n" + flattenMessage(field, toCube.length()) + "\n```";
+            if (msg.length() < 2000) {
+                guild.getController().setNickname(guild.getSelfMember(),
+                        event.getMessage().getAuthor().getName()).complete();
+                event.getChannel().sendMessage(msg).complete();
+                guild.getController().setNickname(guild.getSelfMember(), "").complete();
+            } else {
+                event.getChannel()
+                        .sendMessage("Only my darling can handle me like that. Don't even try.")
+                        .queue();
+            }
+
+        });
+    }
+
+    private void drawBox(@Nonnull String str, boolean shouldRev, @Nonnull char[][] field, int x,
+            int y) {
         int length = str.length();
         for (int i = 0; i < length; i++) {
             field[y + i][x] = str.charAt(i);
             field[y][x + i * 2] = str.charAt(i);
-            field[y + (length - 1)][x + (length - 1 - i) * 2] = shouldRev ? str.charAt(i) : str.charAt(length - i - 1);
-            field[y + (length - 1) - i][x + (length - 1) * 2] = shouldRev ? str.charAt(i) : str.charAt(length - i - 1);
+            field[y + (length - 1)][x + (length - 1 - i) * 2] = shouldRev ? str.charAt(i)
+                    : str.charAt(length - i - 1);
+            field[y + (length - 1) - i][x + (length - 1) * 2] = shouldRev ? str.charAt(i)
+                    : str.charAt(length - i - 1);
         }
     }
 
@@ -76,11 +94,10 @@ public class Cube extends AModule {
     }
 
     private String rtrim(@Nonnull String s) {
-        int i = s.length()-1;
+        int i = s.length() - 1;
         while (i > 0 && Character.isWhitespace(s.charAt(i))) {
             i--;
         }
-        return s.substring(0,i+1);
+        return s.substring(0, i + 1);
     }
-
 }

@@ -1,54 +1,52 @@
 package knights.zerotwo.modules;
 
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
-
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
 
-import knights.zerotwo.AModule;
+import knights.zerotwo.IActive;
+import knights.zerotwo.Utils;
+import net.dv8tion.jda.core.entities.Message.MentionType;
+import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
-public class Crosspost extends AModule {
+public class Crosspost implements IActive {
 
     @Override
-    public boolean accept(MessageReceivedEvent event) {
-        super.accept(event);
-        if (content.startsWith("!crosspost")) {
-            // Some checks
-            String firstLine = content.contains("\n") ? content.substring(0, content.indexOf("\n")) : content;
+    public boolean test(MessageReceivedEvent event) {
+        return Utils.isCommand(event, "crosspost");
+    }
 
-            // Checks if we even have any mentioned channel
-            if (!firstLine.matches(".*#\\w*.*")) return false;
-
-            // if we do, we should accommodate people using the first line as part of their message
-            int splitPos = firstLine.lastIndexOf("#");
-            firstLine = firstLine.substring(splitPos);
-
-            String prefix = message.getAuthor().getAsMention() + " crossposted from <#" + message.getChannel().getId() + ">:\n";
-            String userContent;
-            if (firstLine.contains(" ") && firstLine.contains("\n")) {
-                userContent = content.substring(splitPos + Math.min(firstLine.indexOf(" "), firstLine.indexOf("\n")) + 1).trim();
-            } else if (firstLine.contains(" ") && !firstLine.contains("\n")) {
-                userContent = content.substring(splitPos + firstLine.indexOf(" ")).trim();
-            } else if (!firstLine.contains(" ") && firstLine.contains("\n")) {
-                userContent = content.substring(splitPos + firstLine.indexOf("\n")).trim();
-            } else {
-                return false;
+    @Override
+    public CompletableFuture<Void> apply(MessageReceivedEvent event, String messageContent) {
+        return CompletableFuture.supplyAsync(() -> {
+            int sublen = "crosspost".length() + Utils.PREFIX.length() + 1;
+            if (messageContent.length() < sublen) {
+                event.getChannel().sendMessage("Darling, what do you want me to crosspost~?")
+                        .queue();
+                return CompletableFuture.completedFuture(null);
             }
-
-            Message output = new MessageBuilder(message)
-                    .setContent(prefix + userContent)
-                    .build();
-
-            Set<TextChannel> channels = new HashSet<>(message.getMentionedChannels());
-            channels.remove(message.getTextChannel()); // removes the originating channel
-            channels.removeIf(ch -> userContent.contains("#" + ch.getName())); // ignores any channels in the body
-            channels.forEach(ch -> ch.sendMessage(output).queue());
-            return true;
-        }
-
-        return false;
+            String xpostCommand = messageContent.substring(sublen);
+            String prefix = event.getMessage().getAuthor().getAsMention() + " crossposted from <#"
+                    + event.getMessage().getChannel().getId() + ">:\n";
+            Matcher channelMatcher = MentionType.CHANNEL.getPattern().matcher(xpostCommand);
+            Set<String> channelIds = new HashSet<>();
+            int end = 0;
+            while (channelMatcher.find()) {
+                channelIds.add(channelMatcher.group(1));
+                end = channelMatcher.end();
+            }
+            String text = xpostCommand.substring(end);
+            channelIds.remove(event.getChannel().getId());
+            if (channelIds.isEmpty()) {
+                event.getChannel().sendMessage("I didn't find any channels to crosspost to")
+                        .queue();
+                return CompletableFuture.completedFuture(null);
+            }
+            return CompletableFuture.allOf(channelIds.stream()
+                    .map(channelId -> event.getJDA().getTextChannelById(channelId)
+                            .sendMessage(prefix + text).submit())
+                    .toArray(CompletableFuture[]::new));
+        }).thenCompose(e -> e).thenApply(e -> null);
     }
 }

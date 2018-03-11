@@ -1,70 +1,53 @@
 package knights.zerotwo.modules;
 
+import java.util.concurrent.CompletableFuture;
+
 import com.vdurmont.emoji.EmojiManager;
 
-import knights.zerotwo.AModule;
+import knights.zerotwo.IActive;
 import knights.zerotwo.Utils;
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.entities.Emote;
+import net.dv8tion.jda.core.entities.Message.MentionType;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
-
-public class Clap extends AModule {
+public class Clap implements IActive {
 
     @Override
-    public boolean accept(MessageReceivedEvent event) {
-        super.accept(event);
+    public boolean test(MessageReceivedEvent event) {
+        return Utils.isCommand(event, "clap");
+    }
 
-        if (content.startsWith("!clap")) {
-            CustomEmotes emotes = new CustomEmotes();
-            String[] args = emotes.initEmotes(event).replaceAll("\\s+", " ").split(" ");
-
-            if (args.length == 1) {
-                channel.sendMessage(new MessageBuilder("baka, you need something to :clap: to").build()).queue();
-                return true;
-            } else if (args.length == 2) {
-                channel.sendMessage(new MessageBuilder("baka, you can't clap a single word!").build()).queue();
-                return true;
+    @Override
+    public CompletableFuture<Void> apply(MessageReceivedEvent event, String messageContent) {
+        return CompletableFuture.runAsync(() -> {
+            int sublen = "clap".length() + Utils.PREFIX.length() + 1;
+            if (messageContent.length() < sublen) {
+                event.getChannel().sendMessage(
+                        "you :clap: can't :clap: just :clap: !clap :clap: without :clap: a :clap: message")
+                        .queue();
+                return;
             }
-
+            String command = messageContent.substring(sublen);
+            String[] args = command.replaceAll("\\s+", " ").split(" ");
+            String emote = args[0];
+            int startIndex = 1;
+            if (!EmojiManager.isEmoji(emote)
+                    && !MentionType.EMOTE.getPattern().matcher(emote).matches()) {
+                startIndex = 0;
+                emote = ":clap:";
+            }
+            if (args.length < startIndex + 2) {
+                event.getChannel().sendMessage("baka, you can't clap a single word!").queue();
+                return;
+            }
             StringBuilder output = new StringBuilder();
-            String temp;
-            if (args[1].charAt(0) == ':' && args[1].charAt(args[1].length() - 1) == ':') {
-                temp = args[1];
-            } else {
-                temp = args[1].substring(args[1].lastIndexOf(":") + 1, args[1].length() - 1);
-
+            output.append(args[startIndex]);
+            for (int i = startIndex + 1; i < args.length; i++) {
+                output.append(' ');
+                output.append(emote);
+                output.append(' ');
+                output.append(args[i]);
             }
-
-            if (EmojiManager.isEmoji(args[1])) {
-                for (int i = 2; i < args.length - 1; i++) {
-                    output.append(args[i]);
-                    output.append(args[1]);
-                }
-            } else if (Utils.isInteger(temp) && guild.getEmoteById(temp) != null) {
-                for (int i = 2; i < args.length - 1; i++) {
-                    output.append(args[i]);
-                    output.append(args[1]);
-                }
-            } else if (args[1].charAt(0) == ':' && args[1].charAt(args[1].length() - 1) == ':') {
-                Emote clapMote = guild.getEmotesByName(args[1].substring(1, args[1].length() - 1), false).get(0);
-                for (int i = 2; i < args.length - 1; i++) {
-                    output.append(args[i]);
-                    output.append(clapMote.getAsMention());
-                }
-            } else {
-                for (int i = 1; i < args.length - 1; i++) {
-                    output.append(args[i]);
-                    output.append(":clap:");
-                }
-            }
-            output.append(args[args.length - 1]);
-
-            channel.sendMessage(new MessageBuilder(output.toString()).build()).complete();
-
-            emotes.cleanup();
-        }
-
-        return content.startsWith("!clap");
+            event.getChannel().sendMessage(output.toString()).queue();
+        });
     }
 }

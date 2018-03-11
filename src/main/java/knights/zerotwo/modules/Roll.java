@@ -1,21 +1,32 @@
 package knights.zerotwo.modules;
 
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 
-import knights.zerotwo.AModule;
+import knights.zerotwo.IActive;
 import knights.zerotwo.Utils;
+import net.dv8tion.jda.core.MessageBuilder;
+import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
-public class Roll extends AModule {
+public class Roll implements IActive {
 
     @Override
-    public boolean accept(MessageReceivedEvent event) {
-        super.accept(event);
-        if (content.startsWith("!roll")) {
+    public boolean test(MessageReceivedEvent event) {
+        return Utils.isCommand(event, "roll");
+    }
+
+    @Override
+    public CompletableFuture<Void> apply(MessageReceivedEvent event, String messageContent) {
+        return CompletableFuture.runAsync(() -> {
+            int sublen = "roll".length() + Utils.PREFIX.length() + 1;
+            if (messageContent.length() < sublen) {
+                event.getChannel().sendMessage("Baka, there are no dice to roll").queue();
+                return;
+            }
+
+            String content = messageContent.substring(sublen);
             Random rnd = new Random();
 
             String[] params = content.split(" ");
@@ -38,23 +49,27 @@ public class Roll extends AModule {
                 if (Utils.isInteger(dice)) {
                     sum += Integer.parseInt(dice);
                     break;
-                } else if (diceParams.length != 2
-                        || !Utils.isInteger(diceParams[0])
+                } else if (diceParams.length != 2 || !Utils.isInteger(diceParams[0])
                         || !Utils.isInteger(diceParams[1])) {
-                    return fail("malformed dice argument " + dice);
+                    event.getChannel().sendMessage("malformed dice argument " + dice).queue();
+                    return;
                 }
 
                 int numDice = Integer.parseInt(diceParams[0]);
                 int numSides = Integer.parseInt(diceParams[1]);
 
                 if (numSides == 0) {
-                    return fail("zero sided dice");
+                    event.getChannel().sendMessage("zero sided dice").queue();
+                    return;
                 } else if (numDice <= 0) {
-                    return fail("That's not a valid amount of dice");
+                    event.getChannel().sendMessage("That's not a valid amount of dice").queue();
+                    return;
                 } else if (numDice > 64) {
-                    return fail("Why do you need that many dice!?");
+                    event.getChannel().sendMessage("Why do you need that many dice!?").queue();
+                    return;
                 } else if (numSides > 100) {
-                    return fail("Wha... too many sides @.@");
+                    event.getChannel().sendMessage("Wha... too many sides @.@").queue();
+                    return;
                 }
 
                 for (int i = 0; i < numDice; i++) {
@@ -66,14 +81,8 @@ public class Roll extends AModule {
                 }
             }
 
-            channel.sendMessage(new MessageBuilder(String.valueOf(sum)).build()).queue();
-        }
-
-        return content.equals("!roll");
+            event.getChannel().sendMessage(new MessageBuilder(String.valueOf(sum)).build()).queue();
+        });
     }
 
-    private boolean fail(String failmsg) {
-        channel.sendMessage(new MessageBuilder(failmsg).build()).queue();
-        return true;
-    }
 }

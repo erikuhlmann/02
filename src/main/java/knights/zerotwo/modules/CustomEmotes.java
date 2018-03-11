@@ -4,99 +4,122 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-import knights.zerotwo.AModule;
-import net.dv8tion.jda.core.MessageBuilder;
+import knights.zerotwo.IActive;
+import knights.zerotwo.IWrap;
 import net.dv8tion.jda.core.entities.Emote;
+import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Icon;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
-public class CustomEmotes extends AModule {
+public class CustomEmotes implements IWrap {
+    static class CustomEmoteDefaultAction implements IActive {
+        @Override
+        public boolean test(MessageReceivedEvent event) {
+            return false;
+        }
+
+        @Override
+        public CompletableFuture<Void> apply(MessageReceivedEvent event, String messageContent) {
+            return CompletableFuture.runAsync(() -> {
+                Guild guild = event.getGuild();
+
+                guild.getController().setNickname(guild.getSelfMember(),
+                        event.getMessage().getAuthor().getName()).complete();
+
+                event.getChannel().sendMessage(messageContent).complete();
+
+                guild.getController().setNickname(guild.getSelfMember(), "").complete();
+            });
+        }
+    }
+
+    private static final Pattern EMOTES = Pattern.compile(":([A-Za-z0-9_\\s]+):");
+    private static final IActive DEFAULT_ACTIVE = new CustomEmoteDefaultAction();
+
+    @Override
+    public boolean test(MessageReceivedEvent event) {
+        String raw = event.getMessage().getContentRaw();
+        Matcher m = EMOTES.matcher(raw);
+        while (m.find()) {
+            int start = m.start();
+            if (start == 0 || raw.charAt(start - 1) != '<') {
+                return true;
+            }
+        }
+        return false;
+    }
 
     List<Emote> emotesPendingDeletion = new ArrayList<>();
     List<Message> messsagesPendingDeletion = new ArrayList<>();
-    List<String> emotesAsString = new ArrayList<>();
-    List<Emote> emotes = new ArrayList<>();
-    MessageBuilder messageBuilder = new MessageBuilder();
 
     @Override
-    public boolean accept(MessageReceivedEvent event) {
-        super.accept(event);
+    public CompletableFuture<WrapResult> preAction(MessageReceivedEvent event) {
+        return CompletableFuture.supplyAsync(() -> {
+            String raw = event.getMessage().getContentRaw();
+            Matcher m = EMOTES.matcher(raw);
 
-        if (!content.startsWith("!")) {
-            initEmotes(event);
+            StringBuilder sb = new StringBuilder();
+            while (m.find()) {
+                int start = m.start();
+                if (start > 0 && raw.charAt(start - 1) == '<') {
+                    m.appendReplacement(sb, m.group());
+                    continue;
+                }
 
-            if (emotes.size() != 0) {
-                if (messageBuilder.length() > 2000) {
-                    channel.sendMessage(new MessageBuilder("Only my darling can handle me like that. Don't even try.").build()).queue();
-                } else if (!content.startsWith("!")) {
-                    guild.getController().setNickname(guild.getSelfMember(), message.getAuthor().getName()).complete();
-                    channel.sendMessage(messageBuilder.build()).complete();
-                    messsagesPendingDeletion.add(message);
+                String emote = m.group(1);
+                emote = emote.replace(" ", "_");
+                if (event.getGuild().getEmotesByName(emote, false).size() != 0) {
+                    List<Emote> emotes1 = event.getGuild().getEmotesByName(emote, false);
+                    if (emotes1.size() != 0) {
+                        m.appendReplacement(sb, emotes1.get(0).getAsMention());
+                    }
+                    continue;
+                }
+
+                InputStream img = this.getClass()
+                        .getResourceAsStream("/custom-emotes/" + emote + ".png");
+                if (img != null) {
+                    try {
+                        Emote result = event.getGuild().getController()
+                                .createEmote(emote, Icon.from(img)).complete();
+
+                        m.appendReplacement(sb, result.getAsMention());
+
+                        emotesPendingDeletion.add(result);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    List<Emote> emotes1 = event.getGuild().getEmotesByName(emote, false);
+                    if (emotes1.size() != 0) {
+                        m.appendReplacement(sb, emotes1.get(0).getAsMention());
+                    }
                 }
             }
-        }
+            m.appendTail(sb);
 
-        return false; // we should always return false, since we want this to be a passive command
-    }
-
-    public String initEmotes(MessageReceivedEvent event) {
-        super.accept(event);
-
-         emotesAsString = Pattern.compile(":([A-Za-z0-9_\\s]*):")
-                .matcher(content)
-                .results()
-                .map(str -> {
-                    String output = str.group();
-                    output = output.replace(":", "");
-                    output = output.replace(" ", "_");
-                    return output;
-                })
-                .filter(str -> guild.getEmotesByName(str, false).size() == 0)
-                .distinct()
-                .collect(Collectors.toList());
-
-        emotes = new ArrayList<>();
-        messageBuilder = new MessageBuilder(content);
-
-        emotesAsString.forEach(emote -> {
-            InputStream img = this.getClass().getResourceAsStream("/custom-emotes/" + emote + ".png");
-            if (img != null) {
-                try {
-                    System.out.println("setting emote " + emote);
-                    Emote result = guild.getController().createEmote(emote, Icon.from(img)).complete();
-                    messageBuilder.replace(":" + emote + ":", result.getAsMention());
-                    emotes.add(result);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            if (sb.length() < 2000) {
+                return new WrapResult(sb.toString(), DEFAULT_ACTIVE);
             } else {
-                List<Emote> emotes1 = guild.getEmotesByName(emote, false);
-                if (emotes1.size() != 0) {
-                    messageBuilder.replace(":" + emote + ":", emotes1.get(0).getAsMention());
-                } else {
-                    System.out.println("could not find emote for " + emote);
-                }
+                event.getChannel()
+                        .sendMessage("Only my darling can handle me like that. Don't even try.")
+                        .queue();
+                return new WrapResult(event.getMessage().getContentRaw(), NULL_ACTIVE);
             }
         });
-
-        emotesPendingDeletion.addAll(emotes);
-
-        return messageBuilder.build().getContentRaw();
     }
 
     @Override
-    public void cleanup() {
-        emotesPendingDeletion.forEach(emote -> emote.delete().complete());
-        emotesPendingDeletion.clear();
-        messsagesPendingDeletion.forEach(message -> message.delete().complete());
-        messsagesPendingDeletion.clear();
-        guild.getController().setNickname(guild.getSelfMember(), "").complete();
-        emotesAsString.clear();
-        emotes.clear();
-        messageBuilder = new MessageBuilder();
+    public CompletableFuture<Void> postAction(MessageReceivedEvent event) {
+        return CompletableFuture.runAsync(() -> {
+            emotesPendingDeletion.forEach(emote -> emote.delete().complete());
+            emotesPendingDeletion.clear();
+        });
     }
+
 }
