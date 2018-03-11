@@ -1,6 +1,5 @@
-package active;
+package knights.discord.zerotwo.impl;
 
-import main.AModule;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.TextChannel;
@@ -8,6 +7,8 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 import java.util.HashSet;
 import java.util.Set;
+
+import knights.discord.zerotwo.AModule;
 
 public class Crosspost extends AModule {
 

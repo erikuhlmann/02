@@ -1,4 +1,4 @@
-package main;
+package knights.discord.zerotwo;
 
 public class Utils {
 

@@ -1,13 +1,14 @@
-package active;
+package knights.discord.zerotwo.impl;
 
-import main.AModule;
-import main.Utils;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+
+import knights.discord.zerotwo.AModule;
+import knights.discord.zerotwo.Utils;
 
 public class Roll extends AModule {
 

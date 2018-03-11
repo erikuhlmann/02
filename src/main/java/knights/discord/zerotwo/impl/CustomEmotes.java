@@ -1,6 +1,5 @@
-package passive;
+package knights.discord.zerotwo.impl;
 
-import main.AModule;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Emote;
 import net.dv8tion.jda.core.entities.Guild;
@@ -14,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import knights.discord.zerotwo.AModule;
 
 public class CustomEmotes extends AModule {
 

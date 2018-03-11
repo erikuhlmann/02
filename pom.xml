@@ -20,8 +20,6 @@
                 <configuration>
                     <source>9</source>
                     <target>9</target>
-                    <fork>true</fork>
-                    <executable>javac9</executable>
                 </configuration>
             </plugin>
             <plugin>

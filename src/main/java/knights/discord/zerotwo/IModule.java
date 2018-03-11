@@ -1,4 +1,4 @@
-package main;
+package knights.discord.zerotwo;
 
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
