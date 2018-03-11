@@ -1,7 +1,5 @@
 package knights.zerotwo;
 
-import java.util.concurrent.CompletableFuture;
-
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 public interface IWrap extends IMessageFilter {
@@ -22,12 +20,11 @@ public interface IWrap extends IMessageFilter {
         }
 
         @Override
-        public CompletableFuture<Void> apply(MessageReceivedEvent event, String messageContent) {
-            return CompletableFuture.completedFuture(null);
+        public void apply(MessageReceivedEvent event, String messageContent) {
         }
     };
 
-    CompletableFuture<WrapResult> preAction(MessageReceivedEvent event);
+    WrapResult preAction(MessageReceivedEvent event);
 
-    CompletableFuture<Void> postAction(MessageReceivedEvent event);
+    void postAction(MessageReceivedEvent event);
 }

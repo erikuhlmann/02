@@ -3,7 +3,6 @@ package knights.zerotwo.modules;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
 
 import knights.zerotwo.IPassive;
 import net.dv8tion.jda.core.MessageBuilder;
@@ -41,14 +40,12 @@ public class Desu implements IPassive {
     }
 
     @Override
-    public CompletableFuture<Void> apply(MessageReceivedEvent event) {
+    public void apply(MessageReceivedEvent event) {
         float chance = 0.1f;
 
         if (Math.random() < chance) {
             event.getChannel()
                     .sendMessage(messageList.get(new Random().nextInt(messageList.size()))).queue();
         }
-        return CompletableFuture.completedFuture(null);
     }
-
 }

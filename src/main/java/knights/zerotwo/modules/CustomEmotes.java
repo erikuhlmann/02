@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,17 +23,16 @@ public class CustomEmotes implements IWrap {
         }
 
         @Override
-        public CompletableFuture<Void> apply(MessageReceivedEvent event, String messageContent) {
-            return CompletableFuture.runAsync(() -> {
-                Guild guild = event.getGuild();
+        public void apply(MessageReceivedEvent event, String messageContent) {
+            Guild guild = event.getGuild();
 
-                guild.getController().setNickname(guild.getSelfMember(),
-                        event.getMessage().getAuthor().getName()).complete();
+            guild.getController()
+                    .setNickname(guild.getSelfMember(), event.getMessage().getAuthor().getName())
+                    .complete();
 
-                event.getChannel().sendMessage(messageContent).complete();
+            event.getChannel().sendMessage(messageContent).complete();
 
-                guild.getController().setNickname(guild.getSelfMember(), "").complete();
-            });
+            guild.getController().setNickname(guild.getSelfMember(), "").complete();
         }
     }
 
@@ -58,68 +56,64 @@ public class CustomEmotes implements IWrap {
     List<Message> messsagesPendingDeletion = new ArrayList<>();
 
     @Override
-    public CompletableFuture<WrapResult> preAction(MessageReceivedEvent event) {
-        return CompletableFuture.supplyAsync(() -> {
-            String raw = event.getMessage().getContentRaw();
-            Matcher m = EMOTES.matcher(raw);
+    public WrapResult preAction(MessageReceivedEvent event) {
+        String raw = event.getMessage().getContentRaw();
+        Matcher m = EMOTES.matcher(raw);
 
-            StringBuilder sb = new StringBuilder();
-            while (m.find()) {
-                int start = m.start();
-                if (start > 0 && raw.charAt(start - 1) == '<') {
-                    m.appendReplacement(sb, m.group());
-                    continue;
-                }
-
-                String emote = m.group(1);
-                emote = emote.replace(" ", "_");
-                if (event.getGuild().getEmotesByName(emote, false).size() != 0) {
-                    List<Emote> emotes1 = event.getGuild().getEmotesByName(emote, false);
-                    if (emotes1.size() != 0) {
-                        m.appendReplacement(sb, emotes1.get(0).getAsMention());
-                    }
-                    continue;
-                }
-
-                InputStream img = this.getClass()
-                        .getResourceAsStream("/custom-emotes/" + emote + ".png");
-                if (img != null) {
-                    try {
-                        Emote result = event.getGuild().getController()
-                                .createEmote(emote, Icon.from(img)).complete();
-
-                        m.appendReplacement(sb, result.getAsMention());
-
-                        emotesPendingDeletion.add(result);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    List<Emote> emotes1 = event.getGuild().getEmotesByName(emote, false);
-                    if (emotes1.size() != 0) {
-                        m.appendReplacement(sb, emotes1.get(0).getAsMention());
-                    }
-                }
+        StringBuilder sb = new StringBuilder();
+        while (m.find()) {
+            int start = m.start();
+            if (start > 0 && raw.charAt(start - 1) == '<') {
+                m.appendReplacement(sb, m.group());
+                continue;
             }
-            m.appendTail(sb);
 
-            if (sb.length() < 2000) {
-                return new WrapResult(sb.toString(), DEFAULT_ACTIVE);
+            String emote = m.group(1);
+            emote = emote.replace(" ", "_");
+            if (event.getGuild().getEmotesByName(emote, false).size() != 0) {
+                List<Emote> emotes1 = event.getGuild().getEmotesByName(emote, false);
+                if (emotes1.size() != 0) {
+                    m.appendReplacement(sb, emotes1.get(0).getAsMention());
+                }
+                continue;
+            }
+
+            InputStream img = this.getClass()
+                    .getResourceAsStream("/custom-emotes/" + emote + ".png");
+            if (img != null) {
+                try {
+                    Emote result = event.getGuild().getController()
+                            .createEmote(emote, Icon.from(img)).complete();
+
+                    m.appendReplacement(sb, result.getAsMention());
+
+                    emotesPendingDeletion.add(result);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             } else {
-                event.getChannel()
-                        .sendMessage("Only my darling can handle me like that. Don't even try.")
-                        .queue();
-                return new WrapResult(event.getMessage().getContentRaw(), NULL_ACTIVE);
+                List<Emote> emotes1 = event.getGuild().getEmotesByName(emote, false);
+                if (emotes1.size() != 0) {
+                    m.appendReplacement(sb, emotes1.get(0).getAsMention());
+                }
             }
-        });
+        }
+        m.appendTail(sb);
+
+        if (sb.length() < 2000) {
+            return new WrapResult(sb.toString(), DEFAULT_ACTIVE);
+        } else {
+            event.getChannel()
+                    .sendMessage("Only my darling can handle me like that. Don't even try.")
+                    .queue();
+            return new WrapResult(event.getMessage().getContentRaw(), NULL_ACTIVE);
+        }
     }
 
     @Override
-    public CompletableFuture<Void> postAction(MessageReceivedEvent event) {
-        return CompletableFuture.runAsync(() -> {
-            emotesPendingDeletion.forEach(emote -> emote.delete().complete());
-            emotesPendingDeletion.clear();
-        });
+    public void postAction(MessageReceivedEvent event) {
+        emotesPendingDeletion.forEach(emote -> emote.delete().queue());
+        emotesPendingDeletion.clear();
     }
 
 }

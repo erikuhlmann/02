@@ -3,11 +3,6 @@ package knights.zerotwo;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.security.auth.login.LoginException;
@@ -15,6 +10,7 @@ import javax.security.auth.login.LoginException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import knights.zerotwo.IWrap.WrapResult;
 import knights.zerotwo.modules.Clap;
 import knights.zerotwo.modules.Crosspost;
 import knights.zerotwo.modules.Cube;
@@ -51,9 +47,6 @@ public class Main extends ListenerAdapter {
         wrapperModules = Arrays.asList(new CustomEmotes());
     }
 
-    private static final ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0,
-            TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(3, true));
-
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
         // We don't want to reply to bots, sorry :P
@@ -66,35 +59,17 @@ public class Main extends ListenerAdapter {
         Optional<IActive> active = activeModules.stream().filter(m -> m.test(event)).findAny();
         Optional<IWrap> wrapper = wrapperModules.stream().filter(m -> m.test(event)).findAny();
 
-        if (passive.size() + (active.isPresent() ? 1 : 0) + (wrapper.isPresent() ? 1 : 0) > 0) {
-            event.getChannel().sendTyping().queue();
-
-            try {
-                executor.submit(() -> {
-                    try {
-                        CompletableFuture.allOf(passive.stream().map(m -> m.apply(event))
-                                .toArray(CompletableFuture[]::new)).thenCompose(nil0 -> {
-                                    if (wrapper.isPresent()) {
-                                        return wrapper.get().preAction(event)
-                                                .<Void>thenCompose(result -> active
-                                                        .orElse(result.defaultActive)
-                                                        .apply(event, result.content))
-                                                .<Void>thenCompose(
-                                                        nil1 -> wrapper.get().postAction(event));
-                                    } else if (active.isPresent()) {
-                                        return active.get().apply(event,
-                                                event.getMessage().getContentRaw());
-                                    } else {
-                                        return CompletableFuture.completedFuture(null);
-                                    }
-                                }).get();
-                    } catch (Exception e) {
-                        logger.error("Bot error", e);
-                    }
-                });
-            } catch (RejectedExecutionException e) {
-                event.getChannel().sendMessage("Too many commands @.@").queue();
+        try {
+            passive.forEach(p -> p.apply(event));
+            if (wrapper.isPresent()) {
+                WrapResult result = wrapper.get().preAction(event);
+                active.orElse(result.defaultActive).apply(event, result.content);
+                wrapper.get().postAction(event);
+            } else if (active.isPresent()) {
+                active.get().apply(event, event.getMessage().getContentRaw());
             }
+        } catch (Exception e) {
+            logger.error("Bot error", e);
         }
     }
 }

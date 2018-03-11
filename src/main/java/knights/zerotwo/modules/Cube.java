@@ -1,7 +1,5 @@
 package knights.zerotwo.modules;
 
-import java.util.concurrent.CompletableFuture;
-
 import javax.annotation.Nonnull;
 
 import knights.zerotwo.IActive;
@@ -17,11 +15,11 @@ public class Cube implements IActive {
     }
 
     @Override
-    public CompletableFuture<Void> apply(MessageReceivedEvent event, String messageContent) {
+    public void apply(MessageReceivedEvent event, String messageContent) {
         int sublen = "cube".length() + Utils.PREFIX.length() + 1;
         if (messageContent.length() < sublen) {
             event.getChannel().sendMessage("What do you want to cube?").complete();
-            return CompletableFuture.completedFuture(null);
+            return;
         }
 
         String toCube = messageContent.substring(sublen);
@@ -39,22 +37,20 @@ public class Cube implements IActive {
         drawDiagonal(toCube.length(), field, offset);
         drawBox(toCube, shouldReverseText, field, offset * 2, 0);
         drawBox(toCube, shouldReverseText, field, 0, offset);
-        return CompletableFuture.runAsync(() -> {
-            Guild guild = event.getGuild();
+        Guild guild = event.getGuild();
 
-            String msg = "```\n" + flattenMessage(field, toCube.length()) + "\n```";
-            if (msg.length() < 2000) {
-                guild.getController().setNickname(guild.getSelfMember(),
-                        event.getMessage().getAuthor().getName()).complete();
-                event.getChannel().sendMessage(msg).complete();
-                guild.getController().setNickname(guild.getSelfMember(), "").complete();
-            } else {
-                event.getChannel()
-                        .sendMessage("Only my darling can handle me like that. Don't even try.")
-                        .queue();
-            }
-
-        });
+        String msg = "```\n" + flattenMessage(field, toCube.length()) + "\n```";
+        if (msg.length() < 2000) {
+            guild.getController()
+                    .setNickname(guild.getSelfMember(), event.getMessage().getAuthor().getName())
+                    .complete();
+            event.getChannel().sendMessage(msg).complete();
+            guild.getController().setNickname(guild.getSelfMember(), "").complete();
+        } else {
+            event.getChannel()
+                    .sendMessage("Only my darling can handle me like that. Don't even try.")
+                    .queue();
+        }
     }
 
     private void drawBox(@Nonnull String str, boolean shouldRev, @Nonnull char[][] field, int x,
